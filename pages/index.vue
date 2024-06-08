@@ -3,6 +3,7 @@
     data-theme="dark"
     class="bg-neutral p-8"
     style="border-color: rgb(75, 75, 75)"
+    @scroll="onScroll"
   >
     <div class="border-inherit p-8 rounded bg-base-100">
       <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
@@ -73,6 +74,12 @@
           </tr>
         </tbody>
       </table>
+      <div v-if="txnStore.loading" class="text-center p-5">
+        <span class="loading loading-infinity loading-lg"></span>
+      </div>
+      <div v-if="txnStore.endOfPages" class="text-center p-5">
+        <span> End Of Page </span> 
+      </div>
     </div>
   </div>
 </template>
@@ -89,14 +96,26 @@ const router = useRouter();
 const config = useRuntimeConfig();
 const txnStore = useTxnListStore();
 
-onMounted(async () => {
+onMounted(() => {
   const route = useRoute();
   const txnTypeInt = route.query['type']
     ? parseInt(route.query['type'] as string)
     : -1;
   const txnType = getTransactionTypeFromInt(txnTypeInt);
-  let data = await txnStore.getNextPage({});
+  txnStore.getNextPage(txnType ? {type: txnType}: {});
+  window.onscroll = onScroll;
 });
+
+const onScroll =  ()  => {
+  const reachedEnd = window.innerHeight + window.scrollY >= document.body.offsetHeight;
+  let filterObj:TxnListFilter = {loadNext: true}
+  if(activeTxnType.value !== 'All'){
+    filterObj.type = activeTxnType.value
+  }
+  if (reachedEnd && !txnStore.endOfPages) {
+    txnStore.getNextPage(filterObj);
+  }
+}
 
 const txnToStyleMap: Record<TransactionType, any> = {
   DECLARE: {

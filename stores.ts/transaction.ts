@@ -3,15 +3,20 @@ import type { Paginated } from '~/utils/types';
 
 export const useTxnListStore = defineStore('txnListStore', {
   state: () => ({
-    nextPage: 0,
-    limit: 20,
+    loading: false as boolean,
     transactions: [] as Transaction[],
+    paginationMeta: {} as PagninationMeta,
+    endOfPages: false as boolean,
   }),
   actions: {
     async getNextPage(filters: TxnListFilter) {
       const config = useRuntimeConfig();
       const api = config.public.apiEndpoint;
       const GET_TRANSACTION_LIST = `${api}/txns`;
+
+      if (filters.loadNext) {
+        filters.page = this.paginationMeta.currentPage + 1;
+      }
 
       let params: Record<string, any> = {};
       if (filters.type) {
@@ -20,16 +25,20 @@ export const useTxnListStore = defineStore('txnListStore', {
       params['page'] = filters.page ?? 1;
       params['limit'] = filters.limit ?? 20;
 
+      this.loading = true;
       const paginatedData: Paginated<Transaction> = await $fetch(
         GET_TRANSACTION_LIST,
         { params }
       );
 
+      this.paginationMeta = paginatedData.meta;
       if (params['page'] === 1) {
         this.transactions = paginatedData.data;
       } else {
         this.transactions = [...this.transactions, ...paginatedData.data];
       }
+      this.endOfPages = this.paginationMeta.currentPage >= this.paginationMeta.lastPage;
+      this.loading = false;
     },
   },
   getters: {
