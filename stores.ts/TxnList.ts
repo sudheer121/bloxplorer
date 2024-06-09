@@ -24,7 +24,11 @@ export const useTxnListStore = defineStore('txnListStore', {
       }
       params['page'] = filters.page ?? 1;
       params['limit'] = filters.limit ?? 20;
-
+      const isFirstPage = params['page'] === 1;
+      if (isFirstPage) {
+        this.clearList();
+      }
+      
       this.loading = true;
       const paginatedData: Paginated<Transaction> = await $fetch(
         GET_TRANSACTION_LIST,
@@ -32,7 +36,7 @@ export const useTxnListStore = defineStore('txnListStore', {
       );
 
       this.paginationMeta = paginatedData.meta;
-      if (params['page'] === 1) {
+      if (isFirstPage) {
         this.transactions = paginatedData.data;
       } else {
         this.transactions = [...this.transactions, ...paginatedData.data];
@@ -41,6 +45,9 @@ export const useTxnListStore = defineStore('txnListStore', {
         this.paginationMeta.currentPage >= this.paginationMeta.lastPage;
       this.loading = false;
     },
+    async clearList() {
+      this.transactions = [];
+    }
   },
   getters: {
     getTransactions: (state) => state.transactions,

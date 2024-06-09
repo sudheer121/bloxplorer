@@ -1,5 +1,5 @@
 <template>
-  <div class="p-8 rounded bg-base-100">
+  <div class="p-8 rounded bg-base-100 min-h-screen">
     <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
     <h3 class="text-sm">A list of transactions on Starknet</h3>
 
@@ -46,7 +46,20 @@
             />
             <img v-else src="~/assets/l1.svg" />
           </td>
-          <td>{{ getShortHand(row.transactionHash) }}</td>
+          <td>
+            <div class="flex">
+              <span class="text-lnk-1 hover:text-lnk-2">
+                <NuxtLink :to="`/tx/${row.transactionHash}`">
+                  {{ getShortHand(row.transactionHash) }}
+                </NuxtLink>
+              </span>
+              <div class="flex flex-col justify-center ml-1">
+                <div>
+                  <img src="~/assets/copy.svg" width="14" alt="copy"/>
+                </div>
+              </div>
+            </div>
+          </td>
           <td>
             <TxnTypeBtn :txn-type="row.type" />
           </td>
@@ -59,7 +72,7 @@
     <div v-if="txnStore.loading" class="text-center p-5">
       <span class="loading loading-infinity loading-lg"></span>
     </div>
-    <div v-if="txnStore.endOfPages" class="text-center p-5">
+    <div v-if="txnStore.endOfPages && !txnStore.loading" class="text-center p-5">
       <span> End Of Page </span>
     </div>
   </div>
@@ -67,8 +80,7 @@
 <script setup lang="ts">
 import moment from 'moment';
 import TxnTypeBtn from '~/components/TxnTypeBtn.vue';
-import { useTxnListStore } from '~/stores.ts/transaction';
-import type { Transaction } from '~/utils/models/Transaction';
+import { useTxnListStore } from '~/stores.ts/TxnList';
 import {
   BlockStatus,
   TransactionTypeMap,
@@ -112,41 +124,14 @@ onMounted(() => {
 const onScroll = () => {
   const reachedEnd =
     window.innerHeight + window.scrollY >= document.body.offsetHeight;
-  console.log(filterObject.value);
+
   let filterObj: TxnListFilter = { loadNext: true, ...filterObject.value };
   if (reachedEnd && !txnStore.endOfPages) {
     txnStore.getNextPage(filterObj);
   }
 };
 
-const txnToStyleMap: Record<TransactionType, any> = {
-  DECLARE: {
-    borderColor: 'rgb(107, 125, 7)',
-    backgroundColor: 'rgb(32, 46, 38)',
-    color: 'rgb(254, 255, 181)',
-  },
-  DEPLOY: {
-    borderColor: 'rgb(60, 80, 110)',
-    backgroundColor: 'rgb(34, 54, 85)',
-    color: 'rgb(210, 229, 255)',
-  },
-  DEPLOY_ACCOUNT: {
-    borderColor: 'rgb(60, 80, 110)',
-    backgroundColor: 'rgb(34, 54, 85)',
-    color: 'rgb(210, 229, 255)',
-  },
-  INVOKE: {
-    borderColor: 'rgb(46, 76, 60)',
-    backgroundColor: 'rgb(32, 46, 38)',
-    color: 'rgb(130, 244, 187)',
-  },
-  L1_HANDLER: {
-    borderColor: 'rgb(94, 94, 94)',
-    backgroundColor: 'rgb(56, 56, 56)',
-    color: 'rgb(255, 255, 255)',
-  },
-};
-const txnFilters = ['All', ...Object.keys(txnToStyleMap)];
+const txnFilters = ['All', ...Object.keys(TransactionTypeMap)];
 
 const initCols = [
   {
@@ -182,6 +167,7 @@ const initCols = [
 ];
 
 const txnTypeClicked = async (txnTypeSlug: TransactionType) => {
+  txnStore.clearList();
   activeTxnType.value = txnTypeSlug;
   const typeInt =
     txnTypeSlug === 'All'

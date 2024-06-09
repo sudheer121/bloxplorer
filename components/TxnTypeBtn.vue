@@ -2,9 +2,9 @@
   <div
     class="py-1 px-2 text-xs inline-block rounded border"
     :style="{
-      color: txnTypeToStyleMap[txnType].color,
-      borderColor: txnTypeToStyleMap[txnType].borderColor,
-      backgroundColor: txnTypeToStyleMap[txnType].backgroundColor,
+      color: txnTypeToStyleMap[txnType ?? 'INVOKE'].color,
+      borderColor: txnTypeToStyleMap[txnType ?? 'INVOKE'].borderColor,
+      backgroundColor: txnTypeToStyleMap[txnType ?? 'INVOKE'].backgroundColor,
     }"
   >
     {{ txnType }}
@@ -16,6 +16,6 @@ import { txnTypeToStyleMap } from '~/utils/styles';
 
 // props
 defineProps<{
-  txnType: TransactionType;
+  txnType: TransactionType | null;
 }>();
 </script>
