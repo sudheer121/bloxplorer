@@ -19,7 +19,7 @@
       </div>
       <div class="col-span-1">
         <div class="text-xs" style="color: rgb(170, 170, 170)">TIMESTAMP</div>
-        <div></div>
+        <div>{{ getFormattedDate(block?.timestamp ?? null) }}</div>
       </div>
       <div class="col-span-4">
         <div class="text-xs mb-2" style="color: rgb(170, 170, 170)">STATUS</div>
@@ -50,22 +50,51 @@
     </div>
     <div
       class="flex flex-row h-14 gap-x-10 mb-8 items-center align-middle font-medium"
-      
     >
-      <a 
+      <a
         v-for="tab in tabs"
-        class="h-14" 
+        class="h-14"
         style="line-height: 56px"
-        :class="activeTab === tab.slug ? 'border-b-2 border-shd-75 border-bdr-orng-1' : 'hover:border-b-2 hover:border-bdr-orng-2'"
+        :class="
+          activeTab === tab.slug
+            ? 'border-b-2 border-shd-75 border-bdr-orng-1'
+            : 'hover:border-b-2 hover:border-bdr-orng-2'
+        "
         @click="activeTab = tab.slug"
       >
         <div class="align-middle">{{ tab.name }}</div>
       </a>
     </div>
     <div v-if="activeTab === tabs[0].slug">
-      <TwoColTable :rows="transactionDetails" :header="'Transaction Details'"/>
-      <div style="height: 40px;"></div>
-      <TwoColTable :rows="devInfo" :header="'Developer Info'"/>
+      <TwoColTable :rows="transactionDetails" :header="'Transaction Details'">
+      </TwoColTable>
+      <div style="height: 40px"></div>
+      <TwoColTable :rows="devInfo" :header="'Developer Info'" >
+        <template v-slot:exec>
+          <div class="flex flex-col p-1">
+            <div class="block mb-1">
+              <Btn
+                v-if="execRes?.steps"
+                :value="`${execRes?.steps} STEPS`"
+                :color="'GREEN'"
+              />
+            </div>
+            <div>
+              <Btn
+                v-if="execRes?.pedersen_builtin_applications"
+                :value="`${execRes?.pedersen_builtin_applications} PEDERSEN_BUILTIN`"
+                :color="'ORANGE'"
+                class="mr-1"
+              />
+              <Btn
+                v-if="execRes?.range_check_builtin_applications"
+                :value="`${execRes?.range_check_builtin_applications} RANGE_CHECK_BUILTIN`"
+                :color="'ORANGE'"
+              />
+            </div>
+          </div>
+        </template>
+      </TwoColTable> 
     </div>
   </div>
 </template>
@@ -74,17 +103,20 @@
 const tabs = [
   {
     name: 'Overview',
-    slug: 'overview'
+    slug: 'overview',
   },
   {
     name: 'Events',
-    slug: 'events'
-  }
-]
+    slug: 'events',
+  },
+];
 const activeTab = useState('activeTab', () => tabs[0].slug);
 import { useTxnStore } from '~/stores.ts/Txn';
+import type { ExecutionResources } from '~/utils/models';
 import type { Block } from '~/utils/models/Block';
 import type { Transaction } from '~/utils/models/Transaction';
+import { getFormattedDate } from '~/utils/time';
+import Btn from '~/components/Btn.vue';
 
 const route = useRoute();
 const txnStore = useTxnStore();
@@ -94,50 +126,52 @@ const txn = computed((): Transaction | null => {
 });
 const block = computed((): Block | null => {
   return txn.value?.block ?? null;
-})
-
+});
+const execRes = computed((): ExecutionResources | null => {
+  return txn.value?.meta?.executionResources ?? null;
+});
 
 const transactionDetails = computed(() => [
   {
     name: 'Block Number',
     value: block.value?.blockNumber,
-    isLink: true
+    isLink: true,
   },
   {
     name: 'Timestamp',
-    value: block.value?.timestamp,
-    isLink: false
+    value: `${getTimeFromNow(block?.value?.timestamp ?? null)} ( ${getFormattedDate(block?.value?.timestamp ?? null)} )`,
+    isLink: false,
   },
   {
     name: 'Actual Fee',
-    value: '-',  
-    isLink: false
+    value: '-',
+    isLink: false,
   },
   {
     name: 'Max Fee',
-    value: txn?.value?.maxFee,  
-    isLink: false
+    value: txn?.value?.maxFee,
+    isLink: false,
   },
   {
     name: 'Gas Consumed',
-    value: '-',  
-    isLink: false
+    value: '-',
+    isLink: false,
   },
   {
     name: 'Tokens Transferred',
-    value: '-',  
-    isLink: false
+    value: '-',
+    isLink: false,
   },
   {
     name: 'Contract Address',
     value: txn.value?.senderAddress,
-    isLink: false
+    isLink: false,
   },
   {
     name: 'Class Hash',
     value: '-',
-    isLink: false
-  }
+    isLink: false,
+  },
 ]);
 
 const devInfo = computed(() => [
@@ -160,8 +194,16 @@ const devInfo = computed(() => [
   {
     name: 'L1 Txn Hash',
     value: '-',
+  },
+  {
+    name: 'Execution Resources',
+    colSlug: 'exec',
+  },
+  {
+    name: 'Selector',
+    value: '-'
   }
-])
+]);
 
 onMounted(async () => {
   await txnStore.getTxn(route.params.id as string);

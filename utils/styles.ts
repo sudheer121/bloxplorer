@@ -1,6 +1,6 @@
 import type { TransactionType } from './models';
 
-export const btnStyles: Record<TransactionType, any> = {
+export const btnStyles: Record<string, any> = {
   YELLOW: {
     borderColor: 'rgb(107, 125, 7)',
     backgroundColor: 'rgb(32, 46, 38)',
@@ -21,6 +21,11 @@ export const btnStyles: Record<TransactionType, any> = {
     backgroundColor: 'rgb(56, 56, 56)',
     color: 'rgb(255, 255, 255)',
   },
+  ORANGE: {
+    borderColor: 'rgb(88, 63, 42)',
+    backgroundColor: 'rgb(59, 42, 28)',
+    color: 'rgb(255, 200, 153)',
+  },
 };
 
 export const txnTypeToStyleMap: Record<TransactionType, any> = {
@@ -29,4 +34,4 @@ export const txnTypeToStyleMap: Record<TransactionType, any> = {
   DEPLOY_ACCOUNT: btnStyles.BLUE,
   INVOKE: btnStyles.GREEN,
   L1_HANDLER: btnStyles.GREY,
-}
+};

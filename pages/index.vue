@@ -3,17 +3,9 @@
     <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
     <h3 class="text-sm">A list of transactions on Starknet</h3>
 
-    <div class="mt-5 w-1/2 mb-6">
+    <div class="mt-5 mb-6">
       <div class="join flex rounded-sm">
-        <button
-          v-for="filter in txnFilters"
-          :key="filter"
-          class="join-item btn btn-sm font-normal text-white border border-shd-75 hover:border-shd-75 hover:bg-shd-56"
-          :class="activeTxnType === filter ? 'bg-shd-75' : 'bg-shd-27'"
-          @click="txnTypeClicked(filter)"
-        >
-          {{ filter.toLocaleLowerCase() }}
-        </button>
+        <MultiBtn :values="txnFilters" @btn-clicked="txnTypeClicked" />
       </div>
     </div>
 
@@ -55,7 +47,7 @@
               </span>
               <div class="flex flex-col justify-center ml-1">
                 <div>
-                  <img src="~/assets/copy.svg" width="14" alt="copy"/>
+                  <img src="~/assets/copy.svg" width="14" alt="copy" />
                 </div>
               </div>
             </div>
@@ -65,22 +57,25 @@
           </td>
           <td>...</td>
           <td>{{ row.block.blockNumber }}</td>
-          <td>{{ getTimeStamp(row?.block?.timestamp ?? 0) }}</td>
+          <td>{{ getTimeFromNow(row?.block?.timestamp ?? 0) }}</td>
         </tr>
       </tbody>
     </table>
     <div v-if="txnStore.loading" class="text-center p-5">
       <span class="loading loading-infinity loading-lg"></span>
     </div>
-    <div v-if="txnStore.endOfPages && !txnStore.loading" class="text-center p-5">
+    <div
+      v-if="txnStore.endOfPages && !txnStore.loading"
+      class="text-center p-5"
+    >
       <span> End Of Page </span>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import moment from 'moment';
 import TxnTypeBtn from '~/components/TxnTypeBtn.vue';
 import { useTxnListStore } from '~/stores.ts/TxnList';
+import { getTimeFromNow } from '~/utils/time';
 import {
   BlockStatus,
   TransactionTypeMap,
@@ -90,11 +85,6 @@ import {
 const activeTxnType = useState('activeTxnType', () => '');
 const router = useRouter();
 const txnStore = useTxnListStore();
-
-const getTimeStamp = (unixEpoch: number) => {
-  if (!unixEpoch) return '-';
-  return moment.unix(unixEpoch).fromNow();
-};
 
 const getShortHand = (str: string) => {
   if (!str) return '-';
@@ -131,7 +121,12 @@ const onScroll = () => {
   }
 };
 
-const txnFilters = ['All', ...Object.keys(TransactionTypeMap)];
+const txnFilters = ['All', ...Object.keys(TransactionTypeMap)].map((value) => {
+  return {
+    name: value.toLocaleLowerCase(),
+    slug: value,
+  };
+});
 
 const initCols = [
   {

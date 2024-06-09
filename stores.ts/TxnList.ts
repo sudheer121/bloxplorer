@@ -28,7 +28,7 @@ export const useTxnListStore = defineStore('txnListStore', {
       if (isFirstPage) {
         this.clearList();
       }
-      
+
       this.loading = true;
       const paginatedData: Paginated<Transaction> = await $fetch(
         GET_TRANSACTION_LIST,
@@ -47,7 +47,7 @@ export const useTxnListStore = defineStore('txnListStore', {
     },
     async clearList() {
       this.transactions = [];
-    }
+    },
   },
   getters: {
     getTransactions: (state) => state.transactions,
