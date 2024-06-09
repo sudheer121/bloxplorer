@@ -13,9 +13,9 @@ export type Paginated<T> = {
 };
 
 export type PagninationMeta = {
-  currentPage: number,
-  firstPage: number,
-  lastPage: number,
-  perPage: number,
-  total: number,
+  currentPage: number;
+  firstPage: number;
+  lastPage: number;
+  perPage: number;
+  total: number;
 };

@@ -1,121 +1,123 @@
 <template>
-  <div
-    data-theme="dark"
-    class="bg-neutral p-8"
-    style="border-color: rgb(75, 75, 75)"
-    @scroll="onScroll"
-  >
-    <div class="border-inherit p-8 rounded bg-base-100">
-      <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
-      <h3 class="text-sm">A list of transactions on Starknet</h3>
+  <div class="p-8 rounded bg-base-100">
+    <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
+    <h3 class="text-sm">A list of transactions on Starknet</h3>
 
-      <div class="mt-5 w-1/2 mb-6">
-        <div class="join flex rounded-sm">
-          <button
-            v-for="filter in txnFilters"
-            :key="filter"
-            class="join-item btn btn-sm font-normal text-white border"
-            :style="{
-              backgroundColor:
-                activeTxnType === filter ? 'rgb(75,75,75)' : 'rgb(27, 27, 27)',
-              borderColor: 'rgb(75,75,75)',
-            }"
-            @click="txnTypeClicked(filter)"
-          >
-            {{ filter.toLocaleLowerCase() }}
-          </button>
-        </div>
+    <div class="mt-5 w-1/2 mb-6">
+      <div class="join flex rounded-sm">
+        <button
+          v-for="filter in txnFilters"
+          :key="filter"
+          class="join-item btn btn-sm font-normal text-white border border-shd-75 hover:border-shd-75 hover:bg-shd-56"
+          :class="activeTxnType === filter ? 'bg-shd-75' : 'bg-shd-27'"
+          @click="txnTypeClicked(filter)"
+        >
+          {{ filter.toLocaleLowerCase() }}
+        </button>
       </div>
+    </div>
 
-      <table class="table w-full">
-        <thead>
-          <tr
-            style="border-color: rgb(75, 75, 75)"
-            class="border border-top border-x-0"
-          >
-            <th
-              v-for="col in columns"
-              :key="col.accessorKey"
-              class="font-medium"
-            >
-              {{ col.header }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="row in txnStore.getTransactions"
-            :key="row.id"
-            style="border-color: rgb(75, 75, 75)"
-          >
-            <td>
-              <img
-                v-if="row.type === BlockStatus.ACCEPTED_ON_L2"
-                src="~/assets/l2.svg"
-              />
-              <img v-else src="~/assets/l1.svg" />
-            </td>
-            <td>{{ row.transactionHash }}</td>
-            <td>
-              <div
-                class="py-1 px-2 text-xs inline-block rounded border"
-                :style="{
-                  color: txnToStyleMap[row.type].color,
-                  borderColor: txnToStyleMap[row.type].borderColor,
-                  backgroundColor: txnToStyleMap[row.type].backgroundColor,
-                }"
-              >
-                {{ row.type }}
-              </div>
-            </td>
-            <td>...</td>
-            <td>{{ row.block.blockNumber }}</td>
-            <td>{{ row.block.timestamp }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-if="txnStore.loading" class="text-center p-5">
-        <span class="loading loading-infinity loading-lg"></span>
-      </div>
-      <div v-if="txnStore.endOfPages" class="text-center p-5">
-        <span> End Of Page </span> 
-      </div>
+    <table class="table w-full">
+      <colgroup>
+        <col span="1" style="width: 7%" />
+        <col span="1" style="width: 20%" />
+        <col span="1" style="width: 14%" />
+        <col span="1" style="width: 33%" />
+        <col span="1" style="width: 13%" />
+        <col span="1" style="width: 13%" />
+      </colgroup>
+      <thead>
+        <tr class="border border-top border-x-0 border-shd-75">
+          <th v-for="col in columns" :key="col.accessorKey" class="font-medium">
+            {{ col.header }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="row in txnStore.getTransactions"
+          :key="row.id"
+          class="border-shd-75"
+        >
+          <td>
+            <img
+              v-if="row.type === BlockStatus.ACCEPTED_ON_L2"
+              src="~/assets/l2.svg"
+            />
+            <img v-else src="~/assets/l1.svg" />
+          </td>
+          <td>{{ getShortHand(row.transactionHash) }}</td>
+          <td>
+            <TxnTypeBtn :txn-type="row.type" />
+          </td>
+          <td>...</td>
+          <td>{{ row.block.blockNumber }}</td>
+          <td>{{ getTimeStamp(row?.block?.timestamp ?? 0) }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div v-if="txnStore.loading" class="text-center p-5">
+      <span class="loading loading-infinity loading-lg"></span>
+    </div>
+    <div v-if="txnStore.endOfPages" class="text-center p-5">
+      <span> End Of Page </span>
     </div>
   </div>
 </template>
 <script setup lang="ts">
+import moment from 'moment';
+import TxnTypeBtn from '~/components/TxnTypeBtn.vue';
 import { useTxnListStore } from '~/stores.ts/transaction';
+import type { Transaction } from '~/utils/models/Transaction';
 import {
   BlockStatus,
   TransactionTypeMap,
   getTransactionTypeFromInt,
   type TransactionType,
 } from '~/utils/models/index';
-const activeTxnType = useState('activeTxnType', () => 'All');
+const activeTxnType = useState('activeTxnType', () => '');
 const router = useRouter();
-const config = useRuntimeConfig();
 const txnStore = useTxnListStore();
 
-onMounted(() => {
+const getTimeStamp = (unixEpoch: number) => {
+  if (!unixEpoch) return '-';
+  return moment.unix(unixEpoch).fromNow();
+};
+
+const getShortHand = (str: string) => {
+  if (!str) return '-';
+  return str.slice(0, 6) + '...' + str.slice(-4);
+};
+
+const getTxnTypeFromRoute = computed(() => {
   const route = useRoute();
   const txnTypeInt = route.query['type']
     ? parseInt(route.query['type'] as string)
     : -1;
-  const txnType = getTransactionTypeFromInt(txnTypeInt);
-  txnStore.getNextPage(txnType ? {type: txnType}: {});
+  return getTransactionTypeFromInt(txnTypeInt) ?? 'All';
+});
+
+const filterObject = computed(() => {
+  if (activeTxnType.value === 'All') return {};
+  return { type: activeTxnType.value };
+});
+
+onMounted(() => {
+  activeTxnType.value = getTxnTypeFromRoute.value;
+  let filterObj: TxnListFilter = { loadNext: true, ...filterObject.value };
+  txnStore.getNextPage(filterObj);
   window.onscroll = onScroll;
 });
 
-const onScroll =  ()  => {
-  const reachedEnd = window.innerHeight + window.scrollY >= document.body.offsetHeight;
-  let filterObj:TxnListFilter = {loadNext: true}
-  if(activeTxnType.value !== 'All'){
-    filterObj.type = activeTxnType.value
-  }
+const onScroll = () => {
+  const reachedEnd =
+    window.innerHeight + window.scrollY >= document.body.offsetHeight;
+  console.log(filterObject.value);
+  let filterObj: TxnListFilter = { loadNext: true, ...filterObject.value };
   if (reachedEnd && !txnStore.endOfPages) {
     txnStore.getNextPage(filterObj);
   }
-}
+};
 
 const txnToStyleMap: Record<TransactionType, any> = {
   DECLARE: {
@@ -179,27 +181,6 @@ const initCols = [
   },
 ];
 
-const initRows = [
-  {
-    id: 1,
-    status: 'declare',
-    hash: '0x123',
-    type: 'L1_HANDLER',
-    operations: '0x123',
-    block: '0x123',
-    age: '0x123',
-  },
-  {
-    id: 2,
-    status: 'declare',
-    hash: '0x123',
-    type: 'INVOKE',
-    operations: '0x123',
-    block: '0x123',
-    age: '0x123',
-  },
-];
-
 const txnTypeClicked = async (txnTypeSlug: TransactionType) => {
   activeTxnType.value = txnTypeSlug;
   const typeInt =
@@ -215,5 +196,4 @@ const appendQueryParamsToUrl = (queryObj: any) => {
 };
 
 const columns = useState('columns', () => initCols);
-const rows = useState('rows', () => initRows);
 </script>

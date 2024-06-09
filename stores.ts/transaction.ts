@@ -37,7 +37,8 @@ export const useTxnListStore = defineStore('txnListStore', {
       } else {
         this.transactions = [...this.transactions, ...paginatedData.data];
       }
-      this.endOfPages = this.paginationMeta.currentPage >= this.paginationMeta.lastPage;
+      this.endOfPages =
+        this.paginationMeta.currentPage >= this.paginationMeta.lastPage;
       this.loading = false;
     },
   },
