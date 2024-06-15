@@ -102,7 +102,7 @@ onMounted(() => {
 
 const onScroll = () => {
   const reachedEnd =
-    window.innerHeight + window.scrollY >= document.body.offsetHeight;
+    window.innerHeight + window.scrollY + 2 >= document.body.offsetHeight;
 
   let filterObj: TxnListFilter = { loadNext: true, ...filterObject.value };
   if (reachedEnd && !txnStore.endOfPages) {
@@ -110,12 +110,6 @@ const onScroll = () => {
   }
 };
 
-// const txnFilters = ['All', ...Object.keys(TransactionTypeMap).map((key) => {name: key, slug:key})].map((value) => {
-//   return {
-//     name: value.toLocaleLowerCase(),
-//     slug: value,
-//   };
-// });
 const txnFilters = computed(() => {
   const types = Object.keys(TransactionTypeMap).map((key) => {
     return { name: key.toLowerCase(), slug: key };
