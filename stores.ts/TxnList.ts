@@ -25,9 +25,6 @@ export const useTxnListStore = defineStore('txnListStore', {
       params['page'] = filters.page ?? 1;
       params['limit'] = filters.limit ?? 20;
       const isFirstPage = params['page'] === 1;
-      if (isFirstPage) {
-        this.clearList();
-      }
 
       this.loading = true;
       const paginatedData: Paginated<Transaction> = await $fetch(

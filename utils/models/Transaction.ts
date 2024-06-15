@@ -1,6 +1,7 @@
 import type {
   BlockStatus,
   ExecutionResources,
+  TransactionEvent,
   TransactionFinalityStatus,
   TransactionType,
 } from '.';
@@ -17,6 +18,7 @@ export interface Transaction {
   meta?: {
     executionResources?: ExecutionResources;
     calldata?: string[];
+    events?: TransactionEvent[];
   };
   position: number;
   senderAddress: string;

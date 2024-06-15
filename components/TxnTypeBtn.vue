@@ -1,6 +1,6 @@
 <template>
   <div
-    class="py-1 px-2 text-xs inline-block rounded border"
+    class="py-1 px-2.5 text-xs inline-block rounded border"
     :style="{
       color: txnTypeToStyleMap[txnType ?? 'INVOKE'].color,
       borderColor: txnTypeToStyleMap[txnType ?? 'INVOKE'].borderColor,

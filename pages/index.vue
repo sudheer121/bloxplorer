@@ -1,66 +1,51 @@
 <template>
   <div class="p-8 rounded bg-base-100 min-h-screen">
-    <h2 class="font-medium" style="font-size: 22px">Transactions</h2>
-    <h3 class="text-sm">A list of transactions on Starknet</h3>
+    <div class="pb-6">
+      <h2 class="font-medium text-white" style="font-size: 22px">
+        Transactions
+      </h2>
+      <h3 class="text-sm text-shd-202">A list of transactions on Starknet</h3>
+    </div>
 
     <div class="mt-5 mb-6">
       <div class="join flex rounded-sm">
-        <MultiBtn :values="txnFilters" @btn-clicked="txnTypeClicked" />
+        <MultiBtn
+          :values="txnFilters"
+          @btn-clicked="txnTypeClicked"
+          :active-btn-slug="activeTxnType"
+        />
       </div>
     </div>
-
-    <table class="table w-full">
-      <colgroup>
-        <col span="1" style="width: 7%" />
-        <col span="1" style="width: 20%" />
-        <col span="1" style="width: 14%" />
-        <col span="1" style="width: 33%" />
-        <col span="1" style="width: 13%" />
-        <col span="1" style="width: 13%" />
-      </colgroup>
-      <thead>
-        <tr class="border border-top border-x-0 border-shd-75">
-          <th v-for="col in columns" :key="col.accessorKey" class="font-medium">
-            {{ col.header }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="row in txnStore.getTransactions"
-          :key="row.id"
-          class="border-shd-75"
-        >
-          <td>
-            <img
-              v-if="row.type === BlockStatus.ACCEPTED_ON_L2"
-              src="~/assets/l2.svg"
-            />
-            <img v-else src="~/assets/l1.svg" />
-          </td>
-          <td>
-            <div class="flex">
-              <span class="text-lnk-1 hover:text-lnk-2">
-                <NuxtLink :to="`/tx/${row.transactionHash}`">
-                  {{ getShortHand(row.transactionHash) }}
-                </NuxtLink>
-              </span>
-              <div class="flex flex-col justify-center ml-1">
-                <div>
-                  <img src="~/assets/copy.svg" width="14" alt="copy" />
-                </div>
-              </div>
-            </div>
-          </td>
-          <td>
-            <TxnTypeBtn :txn-type="row.type" />
-          </td>
-          <td>...</td>
-          <td>{{ row.block.blockNumber }}</td>
-          <td>{{ getTimeFromNow(row?.block?.timestamp ?? 0) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <Table :rows="txnStore.getTransactions" :columns="columnList">
+      <template #row="{ item }: { item: Transaction }">
+        <td class="p-1 h-9">
+          <img
+            v-if="item.type === BlockStatus.ACCEPTED_ON_L2"
+            src="~/assets/l2.svg"
+          />
+          <img
+            v-else-if="item.type === BlockStatus.REVERTED"
+            src="~/assets/reverted.svg"
+          />
+          <img v-else src="~/assets/l1.svg" />
+        </td>
+        <td class="p-1 h-9">
+          <CopyableText
+            :link="`/tx/${item.transactionHash}`"
+            :display-value="getShortHand(item.transactionHash)"
+            :actual-value="item.transactionHash"
+          />
+        </td>
+        <td class="p-1 h-9">
+          <TxnTypeBtn :txn-type="item.type" />
+        </td>
+        <td class="p-1 h-9">...</td>
+        <td class="p-1 h-9">{{ item.block.blockNumber }}</td>
+        <td class="p-1 h-9">
+          {{ getTimeFromNow(item?.block?.timestamp ?? 0) }}
+        </td>
+      </template>
+    </Table>
     <div v-if="txnStore.loading" class="text-center p-5">
       <span class="loading loading-infinity loading-lg"></span>
     </div>
@@ -74,6 +59,8 @@
 </template>
 <script setup lang="ts">
 import TxnTypeBtn from '~/components/TxnTypeBtn.vue';
+import Table from '~/components/Table.vue';
+
 import { useTxnListStore } from '~/stores.ts/TxnList';
 import { getTimeFromNow } from '~/utils/time';
 import {
@@ -82,14 +69,8 @@ import {
   getTransactionTypeFromInt,
   type TransactionType,
 } from '~/utils/models/index';
-const activeTxnType = useState('activeTxnType', () => '');
-const router = useRouter();
-const txnStore = useTxnListStore();
-
-const getShortHand = (str: string) => {
-  if (!str) return '-';
-  return str.slice(0, 6) + '...' + str.slice(-4);
-};
+import type { TableRowItem } from '~/utils/types';
+import type { Transaction } from '~/utils/models/Transaction';
 
 const getTxnTypeFromRoute = computed(() => {
   const route = useRoute();
@@ -98,6 +79,14 @@ const getTxnTypeFromRoute = computed(() => {
     : -1;
   return getTransactionTypeFromInt(txnTypeInt) ?? 'All';
 });
+const activeTxnType = useState('activeTxnType', () => getTxnTypeFromRoute);
+const router = useRouter();
+const txnStore = useTxnListStore();
+
+const getShortHand = (str: string) => {
+  if (!str) return '-';
+  return str.slice(0, 6) + '...' + str.slice(-4);
+};
 
 const filterObject = computed(() => {
   if (activeTxnType.value === 'All') return {};
@@ -106,7 +95,7 @@ const filterObject = computed(() => {
 
 onMounted(() => {
   activeTxnType.value = getTxnTypeFromRoute.value;
-  let filterObj: TxnListFilter = { loadNext: true, ...filterObject.value };
+  let filterObj: TxnListFilter = { ...filterObject.value, page: 1 };
   txnStore.getNextPage(filterObj);
   window.onscroll = onScroll;
 });
@@ -121,12 +110,51 @@ const onScroll = () => {
   }
 };
 
-const txnFilters = ['All', ...Object.keys(TransactionTypeMap)].map((value) => {
-  return {
-    name: value.toLocaleLowerCase(),
-    slug: value,
-  };
+// const txnFilters = ['All', ...Object.keys(TransactionTypeMap).map((key) => {name: key, slug:key})].map((value) => {
+//   return {
+//     name: value.toLocaleLowerCase(),
+//     slug: value,
+//   };
+// });
+const txnFilters = computed(() => {
+  const types = Object.keys(TransactionTypeMap).map((key) => {
+    return { name: key.toLowerCase(), slug: key };
+  });
+  return [{ name: 'All', slug: 'All' }, ...types];
 });
+
+const columnList: TableColItem[] = [
+  {
+    name: 'Status',
+    slug: 'status',
+    width: '7%',
+  },
+  {
+    name: 'Hash',
+    slug: 'hash',
+    width: '20%',
+  },
+  {
+    name: 'Type',
+    slug: 'type',
+    width: '14%',
+  },
+  {
+    name: 'Operations',
+    slug: 'operations',
+    width: '33%',
+  },
+  {
+    name: 'Block',
+    slug: 'block',
+    width: '13%',
+  },
+  {
+    name: 'Age',
+    slug: 'age',
+    width: '13%',
+  },
+];
 
 const initCols = [
   {

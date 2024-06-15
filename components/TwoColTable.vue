@@ -9,14 +9,15 @@
         style="min-width: 250px"
       >
         <div><img src="~/assets/question.svg" alt="question" width="18" /></div>
-        <div class="text-xs">{{ row.name }}:</div>
+        <div class="text-xs">{{ row.name?.toUpperCase() }}:</div>
       </div>
 
       <div
-        class="flex items-center flex-auto w-100 border-b border-shd-75 text-sm"
+        class="flex-auto w-100 border-b border-shd-75 text-sm"
+        :class="row.noFlexOnValue ? '' : 'flex items-center flex-auto'"
       >
         <slot :name="row.colSlug" class="border-b border-shd-75">
-          <span>
+          <span :class="row.isLink ? 'text-lnk-1 hover:text-lnk-2' : ''">
             {{ row.value }}
           </span>
         </slot>
@@ -32,6 +33,7 @@ defineProps<{
     value?: string | number;
     isLink?: boolean;
     colSlug?: string;
+    noFlexOnValue?: boolean;
   }[];
   header?: string;
 }>();

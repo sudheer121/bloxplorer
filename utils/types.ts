@@ -19,3 +19,14 @@ export type PagninationMeta = {
   perPage: number;
   total: number;
 };
+
+export type TableColItem = {
+  name: string;
+  slug: string;
+  width?: string;
+};
+
+export type TableRowItem = {
+  id?: string;
+  [key: string]: any;
+};

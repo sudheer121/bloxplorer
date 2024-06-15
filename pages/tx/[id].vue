@@ -7,8 +7,9 @@
     <div class="grid grid-cols-4 gap-y-6 mb-3">
       <div class="col-span-4">
         <div class="text-xs" style="color: rgb(170, 170, 170)">HASH</div>
-        <div class="text-base leading-8">
-          {{ txn?.transactionHash }}
+        <div class="text-base flex flex-row leading-8">
+          <div>{{ txn?.transactionHash }}</div>
+          <Copy :value="txn?.transactionHash ?? ''" :width="16" />
         </div>
       </div>
       <div class="col-span-1">
@@ -25,25 +26,23 @@
         <div class="text-xs mb-2" style="color: rgb(170, 170, 170)">STATUS</div>
         <div class="flex">
           <div
-            class="btn btn-sm btn-rounded py-1 pl-3 pr-2 rounded-3xl font-medium text-white"
-            style="background: rgb(17, 125, 73)"
+            class="btn bg-success hover:bg-success btn-sm btn-rounded py-1 pl-3 pr-2 rounded-3xl font-medium text-white"
           >
             <div>
               <img src="~/assets/tick.svg" width="16" height="16" alt="" />
             </div>
-            <div style="font-size: 11px; line-height: 11px">Received</div>
+            <div style="font-size: 11px; line-height: 11px">{{ getReadableStatus(txn?.executionStatus ?? '') }}</div>
           </div>
           <div class="w-8 flex flex-col justify-center align-center">
             <div style="background: rgb(17, 125, 73); height: 2px"></div>
           </div>
           <div
-            class="btn btn-sm btn-rounded py-1 pl-3 pr-2 rounded-3xl font-medium text-white"
-            style="background: rgb(17, 125, 73)"
+            class="btn btn-sm bg-success hover:bg-success btn-rounded py-1 pl-3 pr-2 rounded-3xl font-medium text-white"
           >
             <div>
               <img src="~/assets/tick.svg" width="16" height="16" alt="" />
             </div>
-            <div style="font-size: 11px; line-height: 11px">Accepted On L2</div>
+            <div style="font-size: 11px; line-height: 11px"> {{ getReadableStatus(txn?.finalityStatus ?? '') }}</div>
           </div>
         </div>
       </div>
@@ -57,7 +56,7 @@
         style="line-height: 56px"
         :class="
           activeTab === tab.slug
-            ? 'border-b-2 border-shd-75 border-bdr-orng-1'
+            ? 'border-b-2 border-bdr-orng-1'
             : 'hover:border-b-2 hover:border-bdr-orng-2'
         "
         @click="activeTab = tab.slug"
@@ -65,36 +64,20 @@
         <div class="align-middle">{{ tab.name }}</div>
       </a>
     </div>
-    <div v-if="activeTab === tabs[0].slug">
-      <TwoColTable :rows="transactionDetails" :header="'Transaction Details'">
-      </TwoColTable>
-      <div style="height: 40px"></div>
-      <TwoColTable :rows="devInfo" :header="'Developer Info'" >
-        <template v-slot:exec>
-          <div class="flex flex-col p-1">
-            <div class="block mb-1">
-              <Btn
-                v-if="execRes?.steps"
-                :value="`${execRes?.steps} STEPS`"
-                :color="'GREEN'"
-              />
-            </div>
-            <div>
-              <Btn
-                v-if="execRes?.pedersen_builtin_applications"
-                :value="`${execRes?.pedersen_builtin_applications} PEDERSEN_BUILTIN`"
-                :color="'ORANGE'"
-                class="mr-1"
-              />
-              <Btn
-                v-if="execRes?.range_check_builtin_applications"
-                :value="`${execRes?.range_check_builtin_applications} RANGE_CHECK_BUILTIN`"
-                :color="'ORANGE'"
-              />
-            </div>
-          </div>
-        </template>
-      </TwoColTable> 
+    <div v-if="activeTab === 'overview'">
+      <Overview
+        :txn="txn"
+        :block="block"
+        :exec-res="execRes"
+        :eth-to-usd="txnStore.ethToUsd"
+      />
+    </div>
+    <div v-if="activeTab === 'events'">
+      <EventsTable
+        :events="txn?.meta?.events ?? []"
+        :block-no="block?.blockNumber ?? -1"
+        :txn-index="txn?.position ?? -1"
+      />
     </div>
   </div>
 </template>
@@ -116,7 +99,8 @@ import type { ExecutionResources } from '~/utils/models';
 import type { Block } from '~/utils/models/Block';
 import type { Transaction } from '~/utils/models/Transaction';
 import { getFormattedDate } from '~/utils/time';
-import Btn from '~/components/Btn.vue';
+import Overview from './Overview.vue';
+import EventsTable from './EventsTable.vue';
 
 const route = useRoute();
 const txnStore = useTxnStore();
@@ -131,81 +115,16 @@ const execRes = computed((): ExecutionResources | null => {
   return txn.value?.meta?.executionResources ?? null;
 });
 
-const transactionDetails = computed(() => [
-  {
-    name: 'Block Number',
-    value: block.value?.blockNumber,
-    isLink: true,
-  },
-  {
-    name: 'Timestamp',
-    value: `${getTimeFromNow(block?.value?.timestamp ?? null)} ( ${getFormattedDate(block?.value?.timestamp ?? null)} )`,
-    isLink: false,
-  },
-  {
-    name: 'Actual Fee',
-    value: '-',
-    isLink: false,
-  },
-  {
-    name: 'Max Fee',
-    value: txn?.value?.maxFee,
-    isLink: false,
-  },
-  {
-    name: 'Gas Consumed',
-    value: '-',
-    isLink: false,
-  },
-  {
-    name: 'Tokens Transferred',
-    value: '-',
-    isLink: false,
-  },
-  {
-    name: 'Contract Address',
-    value: txn.value?.senderAddress,
-    isLink: false,
-  },
-  {
-    name: 'Class Hash',
-    value: '-',
-    isLink: false,
-  },
-]);
-
-const devInfo = computed(() => [
-  {
-    name: 'Unix Timestamp',
-    value: block.value?.timestamp,
-  },
-  {
-    name: 'Nonce',
-    value: txn?.value?.nonce,
-  },
-  {
-    name: 'Position',
-    value: txn?.value?.position,
-  },
-  {
-    name: 'Version',
-    value: '-',
-  },
-  {
-    name: 'L1 Txn Hash',
-    value: '-',
-  },
-  {
-    name: 'Execution Resources',
-    colSlug: 'exec',
-  },
-  {
-    name: 'Selector',
-    value: '-'
-  }
-]);
-
 onMounted(async () => {
   await txnStore.getTxn(route.params.id as string);
 });
+
+const getReadableStatus = (status: string) => {
+  console.log(status, typeof status)
+  let statuses = status.split('_').map((s) => {
+    s = s.toLowerCase()
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  });
+  return statuses.join(" ")
+}
 </script>

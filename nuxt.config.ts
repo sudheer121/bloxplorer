@@ -7,6 +7,14 @@ export default defineNuxtConfig({
     // '@nuxtjs/sitemap',
     '@nuxtjs/tailwindcss',
     '@pinia/nuxt',
+    [
+      '@nuxtjs/google-fonts',
+      {
+        families: {
+          Inter: [300, 700],
+        },
+      },
+    ],
   ],
   buildModules: ['@nuxtjs/svg'],
   eslint: {},
@@ -21,4 +29,5 @@ export default defineNuxtConfig({
       apiEndpoint: '',
     },
   },
+  css: ['~/assets/css/main.css'],
 } as any);
