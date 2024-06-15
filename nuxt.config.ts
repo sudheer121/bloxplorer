@@ -2,10 +2,19 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: [
-    '@nuxtjs/tailwindcss',
     // '@nuxt/eslint',
     // 'nuxt-icon',
     // '@nuxtjs/sitemap',
+    '@nuxtjs/tailwindcss',
+    '@pinia/nuxt',
+    [
+      '@nuxtjs/google-fonts',
+      {
+        families: {
+          Inter: [300, 700],
+        },
+      },
+    ],
   ],
   buildModules: ['@nuxtjs/svg'],
   eslint: {},
@@ -15,4 +24,10 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
-} as any)
+  runtimeConfig: {
+    public: {
+      apiEndpoint: '',
+    },
+  },
+  css: ['~/assets/css/main.css'],
+} as any);
